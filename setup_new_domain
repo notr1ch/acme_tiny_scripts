@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Usage: ./setup_new_domain [www].example.com san1.example.com san2.example.com
+
+if [[ $1 == "www."* ]]
+then
+	INCLUDE_WWW=1
+else
+	INCLUDE_WWW=0
+fi
+
+prefix="www."
+DOMAIN=${1#${prefix}}
+EXTRAS="${@:2}"
+EXTRASAN=""
+
+for EXTRADOMAIN in $EXTRAS; do
+	echo Adding extra domain: $EXTRADOMAIN
+	EXTRASAN="$EXTRASAN,DNS:$EXTRADOMAIN"
+done
+
+mkdir -p "$DOMAIN/rsa"
+mkdir -p "$DOMAIN/dsa"
+
+if [ ! -f "$DOMAIN/dsa/key.pem" ]; then
+	echo Generating new ECDSA key...
+	openssl ecparam -name secp384r1 -genkey -noout -out "$DOMAIN/dsa/key.pem"
+else
+	echo Using existing ECDSA key for $DOMAIN
+fi
+
+if [ ! -f "$DOMAIN/rsa/key.pem" ]; then
+	openssl genrsa -out "$DOMAIN/rsa/key.pem" 2048
+else
+	echo Using existing RSA key for $DOMAIN
+fi
+
+
+for TYPE in rsa dsa; do
+	if [[ $INCLUDE_WWW -eq 1 ]]; then
+	        openssl req -new -sha256     -key "$DOMAIN/$TYPE/key.pem"   -subj "/CN=$DOMAIN"     -reqexts SAN     -config <(cat /etc/ssl/openssl.cnf \
+        <(printf "[SAN]\nsubjectAltName=DNS:$DOMAIN,DNS:www.$DOMAIN$EXTRASAN")) > "$DOMAIN/$TYPE/csr.pem"
+	else
+	        openssl req -new -sha256     -key "$DOMAIN/$TYPE/key.pem"   -subj "/CN=$DOMAIN"     -reqexts SAN     -config <(cat /etc/ssl/openssl.cnf \
+        <(printf "[SAN]\nsubjectAltName=DNS:$DOMAIN$EXTRASAN")) > "$DOMAIN/$TYPE/csr.pem"
+	fi
+done
+
