@@ -2,6 +2,8 @@
 
 # Usage: ./renew_single_domain domain_directory webroot
 
+. vars
+
 EXIT_CODE=0
 
 DOMAIN=$1
@@ -39,7 +41,7 @@ for TYPE in rsa dsa; do
 	fi
 	
 	mkdir -p "$WEBROOT/.well-known/acme-challenge"
-	acme_tiny.py --account-key /etc/nginx/ssl/misc/account_key.pem --contact "mailto:r1ch@teamliquid.net" --csr "$DOMAIN/$TYPE/csr.pem" --acme-dir "$WEBROOT/.well-known/acme-challenge" > "$CERTOUT"
+	acme_tiny.py --account-key "$ACCOUNT_KEY_PATH" --contact "$CONTACT" --csr "$DOMAIN/$TYPE/csr.pem" --acme-dir "$WEBROOT/.well-known/acme-challenge" > "$CERTOUT"
 	if [ $? -eq 0 ]; then
 		echo "Submitting to CT logs..."
 		# Not needed with ACME v2
