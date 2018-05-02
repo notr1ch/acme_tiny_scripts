@@ -52,21 +52,12 @@ for TYPE in rsa dsa; do
 	mkdir -p "$WEBROOT/.well-known/acme-challenge"
 	acme_tiny.py --account-key "$ACCOUNT_KEY_PATH" --contact "$CONTACT" --csr "$DOMAIN/$TYPE/csr.pem" --acme-dir "$WEBROOT/.well-known/acme-challenge" > "$CERTOUT"
 	if [[ $? -eq 0 ]]; then
-		echo "Submitting to CT logs..."
-		# Not needed with ACME v2
-		#cat "$CERTOUT" "/etc/nginx/ssl/misc/lets_encrypt_intermediate.pem" > "$DOMAIN/$TYPE/fullchain.pem"
-
-		# LE now embeds SCTs directly into issued cert
-		#ct-submit ct.googleapis.com/pilot < "$DOMAIN/$TYPE/fullchain.pem" > "$DOMAIN/$TYPE/ct/pilot.sct"
-		#ct-submit ct.googleapis.com/icarus < "$DOMAIN/$TYPE/fullchain.pem" > "$DOMAIN/$TYPE/ct/icarus.sct"
-		#rm "$CERTOUT"
-		
-		mv "$CERTOUT" "$DOMAIN/$TYPE/fullchain.pem"
-		
+		mv "$CERTOUT" "$DOMAIN/$TYPE/fullchain.pem"		
 		echo "Completed."
 		EXIT_CODE=2
 	else
 		echo "Renewal of $TYPE certificate for $DOMAIN failed, exit status $?"
+		EXIT_CODE=1
 	fi
 
 done
