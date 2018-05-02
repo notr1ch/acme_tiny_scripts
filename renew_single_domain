@@ -11,25 +11,29 @@ EXIT_CODE=0
 DOMAIN=$1
 WEBROOT=$2
 
-if [ -z "$DOMAIN" ] || [ -z "$WEBROOT" ]; then
+if [[ -z "$DOMAIN"  || -z "$WEBROOT" ]]; then
 	echo "Usage: $0 domain path"
 	exit 1
 fi
 
-if [ ! -f "$DOMAIN/rsa/key.pem" ] || [ ! -f "$DOMAIN/dsa/key.pem" ]; then
+if [[ ! -f "$DOMAIN/rsa/key.pem"  || (! -f "$DOMAIN/dsa/key.pem" &&  -z "$SKIP_DSA") ]]; then
 	echo "Domain $DOMAIN doesn't exist!"
 	exit 1
 fi
 
-if [ ! -d "$WEBROOT" ]; then
+if [[ ! -d "$WEBROOT" ]]; then
 	echo "Webroot $WEBROOT doesn't exist!"
 	exit 1
 fi
 
 for TYPE in rsa dsa; do
+	if [[ "$TYPE" = "dsa" && ! -z "$SKIP_DSA" ]]; then
+		echo "Skipping $TYPE certificate due to SKIP_DSA being set"
+		continue
+	fi
 
 	# Make sure it actually needs renewing.
-	if [ -f "$DOMAIN/$TYPE/fullchain.pem" ]; then
+	if [[ -f "$DOMAIN/$TYPE/fullchain.pem" ]]; then
 		openssl x509 -checkend 2592000 -in "$DOMAIN/$TYPE/fullchain.pem" -noout 1>/dev/null
 		if [ $? -eq 0 ]; then
 			echo "Renewal of $TYPE certificate for $DOMAIN is not yet necessary, skipping..."
@@ -40,14 +44,14 @@ for TYPE in rsa dsa; do
 	echo "Renewing $TYPE certificate for $DOMAIN..."
 
 	CERTOUT=$(mktemp)
-	if [ -z $CERTOUT ]; then
+	if [[ -z $CERTOUT ]]; then
 		echo "Failed to create temp file"
 		exit 1
 	fi
 	
 	mkdir -p "$WEBROOT/.well-known/acme-challenge"
 	acme_tiny.py --account-key "$ACCOUNT_KEY_PATH" --contact "$CONTACT" --csr "$DOMAIN/$TYPE/csr.pem" --acme-dir "$WEBROOT/.well-known/acme-challenge" > "$CERTOUT"
-	if [ $? -eq 0 ]; then
+	if [[ $? -eq 0 ]]; then
 		echo "Submitting to CT logs..."
 		# Not needed with ACME v2
 		#cat "$CERTOUT" "/etc/nginx/ssl/misc/lets_encrypt_intermediate.pem" > "$DOMAIN/$TYPE/fullchain.pem"
@@ -57,7 +61,7 @@ for TYPE in rsa dsa; do
 		#ct-submit ct.googleapis.com/icarus < "$DOMAIN/$TYPE/fullchain.pem" > "$DOMAIN/$TYPE/ct/icarus.sct"
 		#rm "$CERTOUT"
 		
-		mv "$CEROUT" "$DOMAIN/$TYPE/fullchain.pem"
+		mv "$CERTOUT" "$DOMAIN/$TYPE/fullchain.pem"
 		
 		echo "Completed."
 		EXIT_CODE=2
