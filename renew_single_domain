@@ -2,24 +2,29 @@
 
 # Usage: ./renew_single_domain domain_directory webroot
 
-. vars
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
+. "$SCRIPT_DIR/vars"
 
 EXIT_CODE=0
 
 DOMAIN=$1
-
-if [ ! -f "$DOMAIN/rsa/key.pem" ] || [ ! -f "$DOMAIN/dsa/key.pem" ]; then
-	echo Domain doesn\'t exist!
-	exit 1
-fi
-
 WEBROOT=$2
 
-if [ -z $WEBROOT ]; then
+if [ -z "$DOMAIN" ] || [ -z "$WEBROOT" ]; then
 	echo "Usage: $0 domain path"
 	exit 1
 fi
 
+if [ ! -f "$DOMAIN/rsa/key.pem" ] || [ ! -f "$DOMAIN/dsa/key.pem" ]; then
+	echo "Domain $DOMAIN doesn't exist!"
+	exit 1
+fi
+
+if [ ! -d "$WEBROOT" ]; then
+	echo "Webroot $WEBROOT doesn't exist!"
+	exit 1
+fi
 
 for TYPE in rsa dsa; do
 
