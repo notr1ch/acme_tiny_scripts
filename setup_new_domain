@@ -46,3 +46,5 @@ for TYPE in rsa dsa; do
 	fi
 done
 
+echo "Don't forget to add the ./renew_single_domain to the ./renew_all_domains script!"
+

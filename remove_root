@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+
+open (CERT, "/dev/stdin");
+@lines = <CERT>;
+close (CERT);
+
+$count = @lines;
+
+$skip = 0;
+
+for ($i = 0; $i < $count; $i++)
+{
+	if ($lines[$i] =~ /^-----BEGIN CERTIFICATE-----/)
+	{
+		if ($lines[$i+1] eq "MIIFYDCCBEigAwIBAgIQQAF3ITfU6UK47naqPGQKtzANBgkqhkiG9w0BAQsFADA/\n")
+		{
+			$skip = 1;
+		}
+		else
+		{
+			$skip = 0;
+		}
+	}
+
+	if ($skip == 0)
+	{
+		print $lines[$i];
+	}
+}
+
