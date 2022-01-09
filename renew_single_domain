@@ -53,6 +53,7 @@ for TYPE in rsa dsa; do
 	acme_tiny.py --disable-check --account-key "$ACCOUNT_KEY_PATH" --contact "$CONTACT" --csr "$DOMAIN/$TYPE/csr.pem" --acme-dir "$WEBROOT/.well-known/acme-challenge" > "$CERTOUT"
 	if [[ $? -eq 0 ]]; then
 		cat "$CERTOUT" | "$SCRIPT_DIR/remove_root" > "$DOMAIN/$TYPE/fullchain.pem"
+		rm -f "$CERTOUT"
 		echo "Completed."
 		EXIT_CODE=2
 	else
